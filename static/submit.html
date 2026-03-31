@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Support</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 40px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    }
+
+    .header { text-align: center; margin-bottom: 30px; }
+
+    .header-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin: 0 auto 14px;
+    }
+
+    h1 { font-size: 1.35rem; font-weight: 700; color: #111827; margin-bottom: 6px; }
+    .subtitle { font-size: 0.88rem; color: #6b7280; line-height: 1.5; }
+
+    .form-group { margin-bottom: 14px; }
+
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
+
+    input, textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e5e7eb; border-radius: 9px;
+      font-size: 0.9rem; color: #111827; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    textarea { resize: vertical; min-height: 120px; }
+
+    .row { display: flex; gap: 12px; }
+    .row .form-group { flex: 1; }
+
+    .char-count { font-size: 0.72rem; color: #9ca3af; text-align: right; margin-top: 3px; }
+
+    .submit-btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white; border: none; border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s; margin-top: 6px;
+    }
+
+    .submit-btn:hover { opacity: 0.88; }
+    .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Success state */
+    #success { display: none; text-align: center; padding: 10px 0; }
+
+    .success-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; margin: 0 auto 18px;
+    }
+
+    .success-title { font-size: 1.2rem; font-weight: 700; color: #111827; margin-bottom: 8px; }
+    .success-msg { font-size: 0.88rem; color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+
+    .ticket-id {
+      background: #f3f4f6; border-radius: 8px; padding: 10px 16px;
+      font-size: 0.82rem; color: #374151; margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .auto-reply-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 10px; padding: 16px; margin-top: 16px;
+      text-align: left;
+    }
+
+    .auto-reply-label { font-size: 0.75rem; font-weight: 600; color: #16a34a; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+    .auto-reply-text { font-size: 0.88rem; color: #166534; line-height: 1.6; }
+
+    .new-ticket-btn {
+      background: none; border: 1.5px solid #e5e7eb;
+      border-radius: 9px; padding: 10px 22px;
+      font-size: 0.88rem; font-weight: 600; color: #374151;
+      cursor: pointer; transition: all 0.15s; margin-top: 16px;
+    }
+
+    .new-ticket-btn:hover { border-color: #6366f1; color: #6366f1; }
+
+    .footer { text-align: center; margin-top: 24px; font-size: 0.75rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Form -->
+  <div id="formSection">
+    <div class="header">
+      <div class="header-icon">💬</div>
+      <h1>How can we help?</h1>
+      <p class="subtitle">Send us a message and we'll get back to you as soon as possible.</p>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="customer_name">Your Name *</label>
+        <input type="text" id="customer_name" placeholder="John Smith" required />
+      </div>
+      <div class="form-group">
+        <label for="customer_email">Email Address *</label>
+        <input type="email" id="customer_email" placeholder="john@example.com" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="ticket_body">How can we help? *</label>
+      <textarea id="ticket_body" placeholder="Describe your issue in detail..." maxlength="2000" oninput="updateCount(this)"></textarea>
+      <div class="char-count"><span id="charCount">0</span> / 2000</div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitTicket()">Send Message →</button>
+  </div>
+
+  <!-- Success State -->
+  <div id="success">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Message Received!</div>
+    <div class="success-msg">Thank you for reaching out. Our team is on it.</div>
+    <div class="ticket-id" id="ticketIdBadge"></div>
+
+    <div id="autoReplySection" style="display:none">
+      <div class="auto-reply-box">
+        <div class="auto-reply-label">✓ AI has already responded</div>
+        <div class="auto-reply-text" id="autoReplyText"></div>
+      </div>
+    </div>
+
+    <div id="humanSection" style="display:none">
+      <div class="success-msg" style="margin-top:12px">
+        A support agent will review your message and reply within <strong>24 hours</strong>.
+      </div>
+    </div>
+
+    <br/>
+    <button class="new-ticket-btn" onclick="resetForm()">Submit Another Request</button>
+  </div>
+
+  <div class="footer">Powered by TicketAI</div>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:8000";
+
+  function updateCount(el) {
+    document.getElementById("charCount").textContent = el.value.length;
+  }
+
+  async function submitTicket() {
+    const name = document.getElementById("customer_name").value.trim();
+    const email = document.getElementById("customer_email").value.trim();
+    const body = document.getElementById("ticket_body").value.trim();
+
+    if (!name || !email || !body) { alert("Please fill in all fields."); return; }
+    if (body.length < 10) { alert("Please describe your issue in more detail."); return; }
+
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+
+    try {
+      const res = await fetch(`${API}/classify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_body: body, customer_name: name, customer_email: email }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert("Something went wrong. Please try again."); return; }
+
+      // Show success
+      document.getElementById("formSection").style.display = "none";
+      document.getElementById("success").style.display = "block";
+      document.getElementById("ticketIdBadge").textContent = `Ticket #${data.id}`;
+
+      if (data.auto_reply) {
+        document.getElementById("autoReplyText").textContent = data.auto_reply;
+        document.getElementById("autoReplySection").style.display = "block";
+      } else {
+        document.getElementById("humanSection").style.display = "block";
+      }
+
+    } catch (e) {
+      alert("Connection error. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Send Message →";
+    }
+  }
+
+  function resetForm() {
+    document.getElementById("formSection").style.display = "block";
+    document.getElementById("success").style.display = "none";
+    document.getElementById("autoReplySection").style.display = "none";
+    document.getElementById("humanSection").style.display = "none";
+    document.getElementById("ticket_body").value = "";
+    document.getElementById("charCount").textContent = "0";
+  }
+</script>
+
+</body>
+</html>

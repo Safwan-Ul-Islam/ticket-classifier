@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ticket Classifier</title>
+  <title>TicketAI — Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,309 +14,228 @@
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface2: #273548;
-      --border: #334155;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
+      --purple: #8b5cf6;
+      --teal: #06b6d4;
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --surface3: #374151;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --muted: #6b7280;
+      --muted2: #9ca3af;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* Sidebar */
+    /* Layout */
     .layout { display: flex; min-height: 100vh; }
 
+    /* Sidebar */
     .sidebar {
-      width: 220px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 24px 0;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
+      width: 230px; background: var(--surface); border-right: 1px solid var(--border);
+      padding: 0; position: fixed; top: 0; left: 0; bottom: 0;
+      display: flex; flex-direction: column; z-index: 100;
     }
 
     .sidebar-logo {
-      padding: 0 20px 24px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary);
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 12px;
-      letter-spacing: -0.3px;
+      padding: 22px 20px 20px;
+      font-size: 1.05rem; font-weight: 800; color: var(--text);
+      border-bottom: 1px solid var(--border); letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
     }
 
-    .sidebar-logo span { color: var(--text); }
+    .logo-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .nav-section { padding: 16px 12px 8px; font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 
     .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 11px 20px;
-      cursor: pointer;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: all 0.15s;
-      border-left: 3px solid transparent;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; cursor: pointer; color: var(--muted2);
+      font-size: 0.88rem; font-weight: 500; transition: all 0.15s;
+      border-radius: 8px; margin: 2px 8px;
     }
 
     .nav-item:hover { color: var(--text); background: var(--surface2); }
-    .nav-item.active { color: var(--primary); border-left-color: var(--primary); background: rgba(99,102,241,0.08); }
-    .nav-icon { font-size: 1.1rem; }
+    .nav-item.active { color: var(--text); background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1)); }
+    .nav-item.active .nav-icon { color: var(--primary); }
+    .nav-icon { font-size: 1rem; width: 18px; text-align: center; }
 
-    /* Main content */
-    .main { margin-left: 220px; padding: 32px; flex: 1; }
+    .inbox-badge {
+      background: var(--danger); color: white; border-radius: 10px;
+      padding: 1px 7px; font-size: 0.7rem; font-weight: 700; margin-left: auto;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px; border-top: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--muted);
+    }
+
+    /* Main */
+    .main { margin-left: 230px; padding: 28px 32px; flex: 1; }
 
     .page { display: none; }
     .page.active { display: block; }
 
-    .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 24px;
-      color: var(--text);
-    }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-title { font-size: 1.4rem; font-weight: 700; }
+    .page-sub { font-size: 0.82rem; color: var(--muted2); margin-top: 2px; }
 
     /* Stat cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 28px;
-    }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
 
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden;
     }
 
-    .stat-card::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
+    .stat-card::after {
+      content: ""; position: absolute; right: -10px; bottom: -10px;
+      width: 70px; height: 70px; border-radius: 50%;
+      opacity: 0.06;
     }
 
-    .stat-card.blue::before { background: var(--primary); }
-    .stat-card.green::before { background: var(--success); }
-    .stat-card.red::before { background: var(--danger); }
-    .stat-card.yellow::before { background: var(--warning); }
+    .stat-card.blue::after { background: var(--primary); }
+    .stat-card.green::after { background: var(--success); }
+    .stat-card.yellow::after { background: var(--warning); }
+    .stat-card.red::after { background: var(--danger); }
+    .stat-card.purple::after { background: var(--purple); }
+    .stat-card.teal::after { background: var(--teal); }
 
-    .stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .stat-value { font-size: 2rem; font-weight: 700; }
-    .stat-card.blue .stat-value { color: var(--primary); }
-    .stat-card.green .stat-value { color: var(--success); }
-    .stat-card.red .stat-value { color: var(--danger); }
-    .stat-card.yellow .stat-value { color: var(--warning); }
-    .stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+    .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .blue .stat-icon { background: rgba(99,102,241,0.15); color: var(--primary); }
+    .green .stat-icon { background: rgba(16,185,129,0.15); color: var(--success); }
+    .yellow .stat-icon { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .red .stat-icon { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .purple .stat-icon { background: rgba(139,92,246,0.15); color: var(--purple); }
+    .teal .stat-icon { background: rgba(6,182,212,0.15); color: var(--teal); }
+
+    .stat-value { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+    .blue .stat-value { color: var(--primary); }
+    .green .stat-value { color: var(--success); }
+    .yellow .stat-value { color: var(--warning); }
+    .red .stat-value { color: var(--danger); }
+    .purple .stat-value { color: var(--purple); }
+    .teal .stat-value { color: var(--teal); }
+    .stat-label { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-top: 6px; }
+    .stat-sub { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
 
     /* Charts */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 28px;
-    }
-
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-    }
-
-    .chart-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 16px;
-    }
-
-    .chart-card.full { grid-column: span 2; }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+    .chart-card.full { grid-column: span 3; }
+    .chart-card.half { grid-column: span 1; }
+    .chart-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; }
 
     /* Card */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-
-    .card-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 18px;
-    }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+    .card-title { font-size: 0.78rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 18px; }
 
     /* Form */
-    .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 
-    input, textarea {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-      padding: 10px 14px;
-      outline: none;
-      transition: border-color 0.15s;
+    input, textarea, select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.88rem;
+      padding: 10px 14px; outline: none; transition: border-color 0.15s;
     }
 
-    input:focus, textarea:focus { border-color: var(--primary); }
-
-    .form-row input { flex: 1; min-width: 180px; }
-
-    textarea {
-      width: 100%;
-      resize: vertical;
-      min-height: 110px;
-      margin-bottom: 14px;
-    }
+    input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .form-row input { flex: 1; min-width: 160px; }
+    textarea { width: 100%; resize: vertical; min-height: 110px; margin-bottom: 14px; }
 
     .submit-btn {
-      background: linear-gradient(135deg, var(--primary), #818cf8);
-      color: white;
-      border: none;
-      padding: 12px 32px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      letter-spacing: 0.3px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      color: white; border: none; padding: 11px 28px;
+      border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.2px;
     }
-
-    .submit-btn:hover { opacity: 0.9; }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .submit-btn:hover { opacity: 0.88; }
+    .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* Result */
     #result {
-      display: none;
-      margin-top: 18px;
-      padding: 18px;
-      border-radius: 10px;
-      background: rgba(99,102,241,0.06);
-      border: 1px solid rgba(99,102,241,0.2);
+      display: none; margin-top: 18px; padding: 18px;
+      border-radius: 12px; background: rgba(99,102,241,0.05);
+      border: 1px solid rgba(99,102,241,0.15);
     }
 
-    .result-header { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .result-header { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
 
     .badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      padding: 3px 11px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.4px;
     }
-
     .badge-category { background: rgba(99,102,241,0.15); color: #a5b4fc; }
     .badge-high { background: rgba(239,68,68,0.15); color: #fca5a5; }
     .badge-normal { background: rgba(16,185,129,0.15); color: #6ee7b7; }
     .badge-auto { background: rgba(16,185,129,0.15); color: #6ee7b7; }
     .badge-human { background: rgba(245,158,11,0.15); color: #fcd34d; }
+    .badge-lang { background: rgba(6,182,212,0.15); color: #67e8f9; }
 
+    .r-label { font-size: 0.73rem; color: var(--muted2); margin-bottom: 5px; margin-top: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .r-confidence { font-size: 0.82rem; font-weight: 700; color: var(--primary); }
     .reply-box {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 0.9rem;
-      line-height: 1.7;
-      color: var(--text);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 13px; font-size: 0.88rem;
+      line-height: 1.7; color: var(--text);
     }
 
-    .r-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; margin-top: 12px; }
-    .r-confidence { font-size: 0.85rem; font-weight: 700; color: var(--primary); }
-
-    /* Tabs */
-    .tabs { display: flex; gap: 6px; margin-bottom: 18px; }
-
+    /* Table */
+    .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
     .tab {
-      padding: 8px 18px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 0.88rem;
-      font-weight: 500;
-      transition: all 0.15s;
+      padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted2); cursor: pointer;
+      font-size: 0.85rem; font-weight: 500; transition: all 0.15s;
     }
-
     .tab:hover { color: var(--text); border-color: var(--primary); }
     .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* Table */
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
     th {
-      text-align: left;
-      padding: 10px 14px;
-      color: var(--muted);
-      font-weight: 600;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      text-align: left; padding: 10px 12px; color: var(--muted);
+      font-weight: 600; border-bottom: 1px solid var(--border);
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
     }
-
-    td { padding: 13px 14px; border-bottom: 1px solid rgba(51,65,85,0.5); vertical-align: middle; }
-
+    td { padding: 12px; border-bottom: 1px solid rgba(31,41,55,0.8); vertical-align: middle; }
     tr:hover td { background: rgba(255,255,255,0.02); }
     tr:last-child td { border-bottom: none; }
-
-    .ticket-body-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+    .ticket-body-cell { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); }
 
     .resolve-btn {
-      background: rgba(16,185,129,0.15);
-      color: #6ee7b7;
-      border: 1px solid rgba(16,185,129,0.3);
-      padding: 5px 14px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      background: rgba(16,185,129,0.12); color: #6ee7b7;
+      border: 1px solid rgba(16,185,129,0.25); padding: 5px 12px;
+      border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
+    .resolve-btn:hover { background: rgba(16,185,129,0.22); }
 
-    .resolve-btn:hover { background: rgba(16,185,129,0.25); }
+    .empty { text-align: center; padding: 52px; color: var(--muted); font-size: 0.9rem; }
 
-    .empty { text-align: center; padding: 48px; color: var(--muted); }
-
-    .inbox-badge {
-      background: var(--danger);
-      color: white;
-      border-radius: 10px;
-      padding: 1px 7px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      margin-left: 6px;
+    .action-btn {
+      background: rgba(99,102,241,0.12); color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.25); padding: 7px 16px;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
+    .action-btn:hover { background: rgba(99,102,241,0.22); }
 
-    /* Responsive */
-    @media (max-width: 768px) {
+    .draft-text { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); font-size: 0.82rem; }
+
+    @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .charts-grid { grid-template-columns: 1fr; }
-      .chart-card.full { grid-column: span 1; }
+      .chart-card.full, .chart-card.half { grid-column: span 1; }
+      .sidebar { width: 60px; }
+      .sidebar-logo span, .nav-item span:not(.nav-icon), .nav-section, .sidebar-footer { display: none; }
+      .main { margin-left: 60px; }
     }
   </style>
 </head>
@@ -326,70 +245,111 @@
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-logo">🎫 <span>TicketAI</span></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎫</div>
+      <span>TicketAI</span>
+    </div>
+    <div class="nav-section">Main</div>
     <div class="nav-item active" onclick="showPage('analytics', this)">
-      <span class="nav-icon">📊</span> Analytics
+      <span class="nav-icon">📊</span><span>Analytics</span>
     </div>
     <div class="nav-item" onclick="showPage('classify', this)">
-      <span class="nav-icon">✨</span> Classify Ticket
+      <span class="nav-icon">✨</span><span>Classify Ticket</span>
     </div>
+    <div class="nav-section">Tickets</div>
     <div class="nav-item" onclick="showPage('tickets', this)">
-      <span class="nav-icon">🎫</span> All Tickets
+      <span class="nav-icon">🎫</span><span>All Tickets</span>
     </div>
     <div class="nav-item" onclick="showPage('inbox', this)">
-      <span class="nav-icon">📥</span> Human Inbox <span class="inbox-badge" id="inboxCount">0</span>
+      <span class="nav-icon">📥</span>
+      <span>Human Inbox</span>
+      <span class="inbox-badge" id="inboxCount">0</span>
     </div>
+    <div class="sidebar-footer">TicketAI v2.0</div>
   </aside>
 
-  <!-- Main -->
+  <!-- Main Content -->
   <main class="main">
 
-    <!-- Analytics Page -->
+    <!-- ── Analytics ── -->
     <div class="page active" id="page-analytics">
-      <div class="page-title">Analytics Overview</div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">Analytics Overview</div>
+          <div class="page-sub">All-time performance metrics</div>
+        </div>
+        <button class="action-btn" onclick="loadAnalytics()">↻ Refresh</button>
+      </div>
 
       <div class="stats-grid">
         <div class="stat-card blue">
-          <div class="stat-label">Total Tickets</div>
+          <div class="stat-top"><div class="stat-icon">🎫</div></div>
           <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-label">Total Tickets</div>
           <div class="stat-sub">All time</div>
         </div>
         <div class="stat-card green">
-          <div class="stat-label">Auto Replied</div>
+          <div class="stat-top"><div class="stat-icon">🤖</div></div>
           <div class="stat-value" id="stat-auto">—</div>
+          <div class="stat-label">Auto Replied</div>
           <div class="stat-sub">Handled by AI</div>
         </div>
         <div class="stat-card yellow">
-          <div class="stat-label">Needs Human</div>
+          <div class="stat-top"><div class="stat-icon">👤</div></div>
           <div class="stat-value" id="stat-human">—</div>
+          <div class="stat-label">Needs Human</div>
           <div class="stat-sub">Routed to inbox</div>
         </div>
         <div class="stat-card red">
-          <div class="stat-label">High Urgency</div>
+          <div class="stat-top"><div class="stat-icon">🚨</div></div>
           <div class="stat-value" id="stat-urgent">—</div>
+          <div class="stat-label">High Urgency</div>
           <div class="stat-sub">Email alerts sent</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-top"><div class="stat-icon">😊</div></div>
+          <div class="stat-value" id="stat-sentiment">—</div>
+          <div class="stat-label">Avg Sentiment</div>
+          <div class="stat-sub">Out of 10</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-top"><div class="stat-icon">⏱</div></div>
+          <div class="stat-value" id="stat-resolution">—</div>
+          <div class="stat-label">Avg Resolution</div>
+          <div class="stat-sub">Hours to resolve</div>
         </div>
       </div>
 
       <div class="charts-grid">
-        <div class="chart-card">
+        <div class="chart-card half">
           <div class="chart-title">Tickets by Category</div>
-          <canvas id="categoryChart" height="220"></canvas>
+          <canvas id="categoryChart" height="240"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card half">
+          <div class="chart-title">Customer Sentiment</div>
+          <canvas id="sentimentChart" height="240"></canvas>
+        </div>
+        <div class="chart-card half">
           <div class="chart-title">Urgency Breakdown</div>
-          <canvas id="urgencyChart" height="220"></canvas>
+          <canvas id="urgencyChart" height="240"></canvas>
         </div>
-        <div class="chart-card full">
-          <div class="chart-title">Tickets Over Last 7 Days</div>
-          <canvas id="dailyChart" height="100"></canvas>
+        <div class="chart-card full" style="grid-column: span 3">
+          <div class="chart-title">Tickets — Last 7 Days</div>
+          <canvas id="dailyChart" height="90"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- Classify Page -->
+    <!-- ── Classify ── -->
     <div class="page" id="page-classify">
-      <div class="page-title">Classify New Ticket</div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">Classify New Ticket</div>
+          <div class="page-sub">Paste a customer message to classify and generate a reply</div>
+        </div>
+        <a href="/submit" target="_blank" class="action-btn" style="text-decoration:none">🔗 Public Form</a>
+      </div>
+
       <div class="card">
         <div class="card-title">Customer Details</div>
         <div class="form-row">
@@ -405,56 +365,69 @@
             <span class="badge badge-category" id="r-category"></span>
             <span class="badge" id="r-urgency"></span>
             <span class="badge" id="r-auto"></span>
+            <span class="badge badge-lang" id="r-lang"></span>
             <span class="r-confidence" id="r-confidence"></span>
           </div>
-          <div class="r-label" id="r-label"></div>
+
+          <div class="r-label">AI Response</div>
           <div class="reply-box" id="r-reply"></div>
+
+          <div class="r-label">Sentiment Score</div>
+          <div class="reply-box" id="r-sentiment-val"></div>
+
+          <div id="r-draft-wrap" style="display:none">
+            <div class="r-label">Suggested Reply Draft (for human agent)</div>
+            <div class="reply-box" id="r-draft"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- All Tickets Page -->
+    <!-- ── All Tickets ── -->
     <div class="page" id="page-tickets">
-      <div class="page-title">All Tickets</div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">All Tickets</div>
+          <div class="page-sub">Complete ticket history</div>
+        </div>
+        <button class="action-btn" onclick="loadTickets('allTicketsBody', '/tickets')">↻ Refresh</button>
+      </div>
       <div class="card">
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Customer</th>
-              <th>Message</th>
-              <th>Category</th>
-              <th>Confidence</th>
-              <th>Urgency</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th>#</th><th>Customer</th><th>Message</th><th>Category</th>
+              <th>Lang</th><th>Sentiment</th><th>Confidence</th>
+              <th>Urgency</th><th>Status</th><th>Action</th>
             </tr>
           </thead>
           <tbody id="allTicketsBody">
-            <tr><td colspan="8" class="empty">Loading...</td></tr>
+            <tr><td colspan="10" class="empty">Loading...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Human Inbox Page -->
+    <!-- ── Human Inbox ── -->
     <div class="page" id="page-inbox">
-      <div class="page-title">Human Inbox</div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">Human Inbox</div>
+          <div class="page-sub">Tickets that need a human agent to respond</div>
+        </div>
+        <button class="action-btn" onclick="loadInbox()">↻ Refresh</button>
+      </div>
       <div class="card">
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Customer</th>
-              <th>Message</th>
-              <th>Category</th>
-              <th>Urgency</th>
-              <th>Agent Summary</th>
-              <th>Action</th>
+              <th>#</th><th>Customer</th><th>Message</th><th>Category</th>
+              <th>Urgency</th><th>Sentiment</th><th>Agent Summary</th>
+              <th>Suggested Draft</th><th>Action</th>
             </tr>
           </thead>
           <tbody id="inboxBody">
-            <tr><td colspan="7" class="empty">Loading...</td></tr>
+            <tr><td colspan="9" class="empty">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -465,17 +438,24 @@
 
 <script>
   const API = "http://127.0.0.1:8000";
-  let categoryChart, urgencyChart, dailyChart;
+  let categoryChart, sentimentChart, urgencyChart, dailyChart;
+
+  const CHART_DEFAULTS = {
+    plugins: { legend: { labels: { color: "#6b7280", font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y: { ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } }
+    }
+  };
 
   function showPage(name, el) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
     document.getElementById("page-" + name).classList.add("active");
     el.classList.add("active");
-
     if (name === "analytics") loadAnalytics();
     if (name === "tickets") loadTickets("allTicketsBody", "/tickets");
-    if (name === "inbox") loadTickets("inboxBody", "/tickets/inbox", true);
+    if (name === "inbox") loadInbox();
   }
 
   async function loadAnalytics() {
@@ -486,121 +466,134 @@
     document.getElementById("stat-auto").textContent = d.auto_replied;
     document.getElementById("stat-human").textContent = d.needs_human;
     document.getElementById("stat-urgent").textContent = d.high_urgency;
+    document.getElementById("stat-sentiment").textContent = d.avg_sentiment ? d.avg_sentiment.toFixed(1) : "—";
+    document.getElementById("stat-resolution").textContent = d.avg_resolution_hours ? d.avg_resolution_hours + "h" : "—";
     document.getElementById("inboxCount").textContent = d.needs_human;
 
-    const catLabels = d.by_category.map(x => x.category.replace("_", " "));
-    const catData = d.by_category.map(x => x.count);
-    const catColors = ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
-
+    // Category doughnut
     if (categoryChart) categoryChart.destroy();
     categoryChart = new Chart(document.getElementById("categoryChart"), {
       type: "doughnut",
       data: {
-        labels: catLabels,
-        datasets: [{ data: catData, backgroundColor: catColors, borderWidth: 0 }]
+        labels: d.by_category.map(x => x.category.replace("_", " ")),
+        datasets: [{ data: d.by_category.map(x => x.count), backgroundColor: ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4"], borderWidth: 0 }]
       },
-      options: {
-        plugins: { legend: { labels: { color: "#94a3b8", font: { size: 12 } } } },
-        cutout: "65%"
-      }
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, cutout: "68%" }
     });
 
-    const urgLabels = d.by_urgency.map(x => x.urgency);
-    const urgData = d.by_urgency.map(x => x.count);
-    const urgColors = urgLabels.map(u => u === "high" ? "#ef4444" : "#10b981");
+    // Sentiment doughnut
+    if (sentimentChart) sentimentChart.destroy();
+    sentimentChart = new Chart(document.getElementById("sentimentChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Angry (1-3)", "Neutral (4-6)", "Happy (7-10)"],
+        datasets: [{ data: [d.sentiment_breakdown.negative, d.sentiment_breakdown.neutral, d.sentiment_breakdown.positive], backgroundColor: ["#ef4444", "#f59e0b", "#10b981"], borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, cutout: "68%" }
+    });
 
+    // Urgency bar
+    const urgLabels = d.by_urgency.map(x => x.urgency);
     if (urgencyChart) urgencyChart.destroy();
     urgencyChart = new Chart(document.getElementById("urgencyChart"), {
       type: "bar",
       data: {
         labels: urgLabels,
-        datasets: [{ data: urgData, backgroundColor: urgColors, borderRadius: 8 }]
+        datasets: [{ data: d.by_urgency.map(x => x.count), backgroundColor: urgLabels.map(u => u === "high" ? "#ef4444" : "#10b981"), borderRadius: 8 }]
       },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { ticks: { color: "#94a3b8", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.05)" } }
-        }
-      }
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } }, y: { ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } } } }
     });
 
-    const dayLabels = d.daily.map(x => x.day);
-    const dayData = d.daily.map(x => x.count);
-
+    // Daily line
     if (dailyChart) dailyChart.destroy();
     dailyChart = new Chart(document.getElementById("dailyChart"), {
       type: "line",
       data: {
-        labels: dayLabels,
+        labels: d.daily.map(x => x.day),
         datasets: [{
-          label: "Tickets",
-          data: dayData,
-          borderColor: "#6366f1",
-          backgroundColor: "rgba(99,102,241,0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#6366f1",
-          pointRadius: 4
+          label: "Tickets", data: d.daily.map(x => x.count),
+          borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.08)",
+          fill: true, tension: 0.4, pointBackgroundColor: "#6366f1", pointRadius: 4
         }]
       },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { ticks: { color: "#94a3b8", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.05)" } }
-        }
-      }
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } }, y: { ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } } } }
     });
   }
 
-  async function loadTickets(tbodyId, endpoint, isInbox = false) {
+  function sentimentColor(score) {
+    if (!score) return "#6b7280";
+    if (score <= 3) return "#ef4444";
+    if (score <= 6) return "#f59e0b";
+    return "#10b981";
+  }
+
+  function sentimentEmoji(score) {
+    if (!score) return "—";
+    if (score <= 3) return `😠 ${score}/10`;
+    if (score <= 6) return `😐 ${score}/10`;
+    return `😊 ${score}/10`;
+  }
+
+  async function loadTickets(tbodyId, endpoint) {
     const res = await fetch(`${API}${endpoint}`);
     const tickets = await res.json();
     const tbody = document.getElementById(tbodyId);
 
     if (tickets.length === 0) {
-      const cols = isInbox ? 7 : 8;
-      tbody.innerHTML = `<tr><td colspan="${cols}" class="empty">No tickets found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="empty">No tickets yet.</td></tr>`;
       return;
     }
 
-    if (isInbox) {
-      tbody.innerHTML = tickets.map(t => `
-        <tr>
-          <td>#${t.id}</td>
-          <td>${t.customer_name}</td>
-          <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
-          <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
-          <td><span class="badge ${t.urgency === 'high' ? 'badge-high' : 'badge-normal'}">${t.urgency}</span></td>
-          <td style="max-width:200px;color:var(--muted);font-size:0.85rem">${t.agent_summary || "—"}</td>
-          <td><button class="resolve-btn" onclick="resolve(${t.id})">✓ Resolve</button></td>
-        </tr>
-      `).join("");
-    } else {
-      tbody.innerHTML = tickets.map(t => `
-        <tr>
-          <td>#${t.id}</td>
-          <td>${t.customer_name}</td>
-          <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
-          <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
-          <td style="font-weight:700;color:var(--primary)">${t.confidence}%</td>
-          <td><span class="badge ${t.urgency === 'high' ? 'badge-high' : 'badge-normal'}">${t.urgency}</span></td>
-          <td><span class="badge ${t.resolved ? 'badge-normal' : t.should_auto_reply ? 'badge-auto' : 'badge-human'}">
-            ${t.resolved ? "Resolved" : t.should_auto_reply ? "Auto Replied" : "Needs Human"}
-          </span></td>
-          <td>${!t.resolved && !t.should_auto_reply
-            ? `<button class="resolve-btn" onclick="resolve(${t.id}, 'allTicketsBody', '/tickets')">✓ Resolve</button>`
-            : "—"
-          }</td>
-        </tr>
-      `).join("");
+    tbody.innerHTML = tickets.map(t => `
+      <tr>
+        <td style="color:var(--muted);font-size:0.8rem">#${t.id}</td>
+        <td style="font-weight:500">${t.customer_name}</td>
+        <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
+        <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
+        <td><span class="badge badge-lang">${t.language || "en"}</span></td>
+        <td style="font-weight:700;color:${sentimentColor(t.sentiment_score)}">${sentimentEmoji(t.sentiment_score)}</td>
+        <td style="font-weight:700;color:var(--primary)">${t.confidence}%</td>
+        <td><span class="badge ${t.urgency === 'high' ? 'badge-high' : 'badge-normal'}">${t.urgency}</span></td>
+        <td><span class="badge ${t.resolved ? 'badge-normal' : t.should_auto_reply ? 'badge-auto' : 'badge-human'}">
+          ${t.resolved ? "✓ Resolved" : t.should_auto_reply ? "Auto Replied" : "Needs Human"}
+        </span></td>
+        <td>${!t.resolved && !t.should_auto_reply
+          ? `<button class="resolve-btn" onclick="resolve(${t.id}, 'allTicketsBody', '/tickets')">✓ Resolve</button>`
+          : "—"
+        }</td>
+      </tr>
+    `).join("");
+  }
+
+  async function loadInbox() {
+    const res = await fetch(`${API}/tickets/inbox`);
+    const tickets = await res.json();
+    const tbody = document.getElementById("inboxBody");
+
+    if (tickets.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">All clear! No tickets need human attention.</td></tr>`;
+      return;
     }
+
+    tbody.innerHTML = tickets.map(t => `
+      <tr>
+        <td style="color:var(--muted);font-size:0.8rem">#${t.id}</td>
+        <td style="font-weight:500">${t.customer_name}</td>
+        <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
+        <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
+        <td><span class="badge ${t.urgency === 'high' ? 'badge-high' : 'badge-normal'}">${t.urgency}</span></td>
+        <td style="font-weight:700;color:${sentimentColor(t.sentiment_score)}">${sentimentEmoji(t.sentiment_score)}</td>
+        <td style="max-width:160px;color:var(--muted2);font-size:0.82rem">${t.agent_summary || "—"}</td>
+        <td class="draft-text" title="${t.suggested_reply || ''}">${t.suggested_reply || "—"}</td>
+        <td><button class="resolve-btn" onclick="resolve(${t.id})">✓ Resolve</button></td>
+      </tr>
+    `).join("");
   }
 
   async function resolve(id, tbodyId = "inboxBody", endpoint = "/tickets/inbox") {
     await fetch(`${API}/tickets/${id}/resolve`, { method: "PATCH" });
-    loadTickets(tbodyId, endpoint, endpoint === "/tickets/inbox");
+    if (tbodyId === "inboxBody") loadInbox();
+    else loadTickets(tbodyId, endpoint);
     loadAnalytics();
   }
 
@@ -625,22 +618,26 @@
       const data = await res.json();
       if (!res.ok) { alert(data.detail); return; }
 
-      const result = document.getElementById("result");
-      result.style.display = "block";
-
+      document.getElementById("result").style.display = "block";
       document.getElementById("r-category").textContent = data.category.replace("_", " ");
       document.getElementById("r-confidence").textContent = `Confidence: ${data.confidence}%`;
+      document.getElementById("r-lang").textContent = `lang: ${data.language || "en"}`;
 
       const urgEl = document.getElementById("r-urgency");
       urgEl.textContent = data.urgency === "high" ? "High Urgency" : "Normal";
       urgEl.className = `badge ${data.urgency === "high" ? "badge-high" : "badge-normal"}`;
 
       const autoEl = document.getElementById("r-auto");
-      autoEl.textContent = data.should_auto_reply ? "Auto Replied" : "Needs Human";
+      autoEl.textContent = data.should_auto_reply ? "✓ Auto Replied" : "Needs Human";
       autoEl.className = `badge ${data.should_auto_reply ? "badge-auto" : "badge-human"}`;
 
-      document.getElementById("r-label").textContent = data.should_auto_reply ? "Auto Reply Sent:" : "Agent Summary:";
-      document.getElementById("r-reply").textContent = data.auto_reply || data.agent_summary;
+      document.getElementById("r-reply").textContent = data.auto_reply || data.agent_summary || "—";
+      document.getElementById("r-sentiment-val").textContent = `${sentimentEmoji(data.sentiment_score)} — ${data.sentiment_score <= 3 ? "Customer is angry or frustrated" : data.sentiment_score <= 6 ? "Customer is neutral" : "Customer seems happy"}`;
+
+      if (data.suggested_reply) {
+        document.getElementById("r-draft").textContent = data.suggested_reply;
+        document.getElementById("r-draft-wrap").style.display = "block";
+      }
 
     } catch (e) {
       alert("Error: " + e.message);
@@ -650,7 +647,7 @@
     }
   }
 
-  // Load on start
+  // Init
   loadAnalytics();
 </script>
 </body>
