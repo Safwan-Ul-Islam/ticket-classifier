@@ -396,11 +396,12 @@ story.append(Spacer(1, 0.4*cm))
 story.append(Paragraph("8. Repository &amp; Links", SECTION_TITLE))
 story.append(section_rule())
 links = [
-    ("GitHub",      "github.com/Safwan-Ul-Islam/ticket-classifier"),
-    ("Live API",    "http://127.0.0.1:8000 (local) → deploy to get public URL"),
-    ("API Docs",    "http://127.0.0.1:8000/docs"),
-    ("Public Form", "http://127.0.0.1:8000/submit"),
-    ("Dashboard",   "http://127.0.0.1:8000"),
+    ("GitHub",       "github.com/Safwan-Ul-Islam/ticket-classifier"),
+    ("Live URL",     "https://ticket-classifier-production.up.railway.app"),
+    ("Dashboard",    "https://ticket-classifier-production.up.railway.app"),
+    ("API Docs",     "https://ticket-classifier-production.up.railway.app/docs"),
+    ("Public Form",  "https://ticket-classifier-production.up.railway.app/submit"),
+    ("Analytics",    "https://ticket-classifier-production.up.railway.app/analytics"),
 ]
 story.append(info_table(links))
 story.append(Spacer(1, 0.6*cm))
