@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ticket-classifier
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ALERT_EMAIL
+        sync: false
+      - key: ALERT_EMAIL_PASSWORD
+        sync: false
+      - key: ALERT_EMAIL_RECIPIENT
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
