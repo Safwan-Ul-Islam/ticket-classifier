@@ -231,3 +231,36 @@ def resolve_ticket(ticket_id: int):
         conn.execute("UPDATE tickets SET resolved = TRUE WHERE id = ?", (ticket_id,))
         conn.commit()
     return {"message": f"Ticket {ticket_id} marked as resolved"}
+
+
+@app.get("/analytics")
+def get_analytics():
+    with get_db() as conn:
+        total = conn.execute("SELECT COUNT(*) FROM tickets").fetchone()[0]
+        auto_replied = conn.execute("SELECT COUNT(*) FROM tickets WHERE should_auto_reply = TRUE").fetchone()[0]
+        high_urgency = conn.execute("SELECT COUNT(*) FROM tickets WHERE urgency = 'high'").fetchone()[0]
+        resolved = conn.execute("SELECT COUNT(*) FROM tickets WHERE resolved = TRUE").fetchone()[0]
+
+        by_category = conn.execute("""
+            SELECT category, COUNT(*) as count FROM tickets GROUP BY category
+        """).fetchall()
+
+        by_urgency = conn.execute("""
+            SELECT urgency, COUNT(*) as count FROM tickets GROUP BY urgency
+        """).fetchall()
+
+        daily = conn.execute("""
+            SELECT DATE(created_at) as day, COUNT(*) as count
+            FROM tickets GROUP BY day ORDER BY day DESC LIMIT 7
+        """).fetchall()
+
+    return {
+        "total": total,
+        "auto_replied": auto_replied,
+        "needs_human": total - auto_replied,
+        "high_urgency": high_urgency,
+        "resolved": resolved,
+        "by_category": [{"category": r[0], "count": r[1]} for r in by_category],
+        "by_urgency": [{"urgency": r[0], "count": r[1]} for r in by_urgency],
+        "daily": [{"day": r[0], "count": r[1]} for r in reversed(daily)],
+    }
