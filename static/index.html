@@ -487,6 +487,8 @@
           <div class="page-sub">Complete ticket history</div>
         </div>
         <div class="header-actions">
+          <span class="last-updated" id="ticketsUpdated"></span>
+          <button class="btn-toggle on" id="ticketsAutoBtn" onclick="toggleTicketsAuto()">⟳ Live: ON</button>
           <button class="btn-green" onclick="exportCSV('allTickets', 'all_tickets')">⬇ Export CSV</button>
           <button class="action-btn" onclick="loadTickets()">↻ Refresh</button>
         </div>
@@ -539,6 +541,7 @@
           <div class="page-sub">Tickets that need a human agent to respond</div>
         </div>
         <div class="header-actions">
+          <span class="last-updated" id="inboxUpdated"></span>
           <button class="btn-green" onclick="exportCSV('inboxTickets', 'inbox_tickets')">⬇ Export CSV</button>
           <button class="action-btn" onclick="loadInbox()">↻ Refresh</button>
         </div>
@@ -603,6 +606,7 @@
   const API = "";
   let categoryChart, sentimentChart, urgencyChart, dailyChart;
   let autoRefreshInterval = null;
+  let ticketsAutoInterval = null;
   let allTickets = [];
   let inboxTickets = [];
 
@@ -620,8 +624,9 @@
     document.getElementById("page-" + name).classList.add("active");
     el.classList.add("active");
     if (name === "analytics") loadAnalytics();
-    if (name === "tickets") loadTickets();
-    if (name === "inbox") loadInbox();
+    if (name === "tickets") { loadTickets(); startTicketsAuto(); }
+    if (name === "inbox") { loadInbox(); startTicketsAuto(); }
+    if (name !== "tickets" && name !== "inbox") stopTicketsAuto();
   }
 
   function toggleAutoRefresh() {
@@ -722,11 +727,40 @@
     return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  function startTicketsAuto() {
+    if (ticketsAutoInterval) return;
+    ticketsAutoInterval = setInterval(() => {
+      const activePage = document.querySelector(".page.active");
+      if (!activePage) return;
+      if (activePage.id === "page-tickets") loadTickets();
+      else if (activePage.id === "page-inbox") loadInbox();
+    }, 15000);
+  }
+
+  function stopTicketsAuto() {
+    if (ticketsAutoInterval) { clearInterval(ticketsAutoInterval); ticketsAutoInterval = null; }
+  }
+
+  function toggleTicketsAuto() {
+    const btn = document.getElementById("ticketsAutoBtn");
+    if (ticketsAutoInterval) {
+      stopTicketsAuto();
+      btn.textContent = "⟳ Live: OFF";
+      btn.classList.remove("on");
+    } else {
+      startTicketsAuto();
+      btn.textContent = "⟳ Live: ON";
+      btn.classList.add("on");
+    }
+  }
+
   // ── All Tickets ──
   async function loadTickets() {
     const res = await fetch(`${API}/tickets`);
     allTickets = await res.json();
     filterTickets();
+    const el = document.getElementById("ticketsUpdated");
+    if (el) el.textContent = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
   }
 
   function filterTickets() {
@@ -794,6 +828,8 @@
     // Update badge from actual inbox count
     document.getElementById("inboxCount").textContent = inboxTickets.length;
     filterInbox();
+    const el = document.getElementById("inboxUpdated");
+    if (el) el.textContent = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
   }
 
   function filterInbox() {
