@@ -1,14 +1,10 @@
 import os
-import re
 import json
 import sqlite3
 import smtplib
-import imaplib
 import asyncio
 import urllib.request
-import email as email_lib
 from email.mime.text import MIMEText
-from email.header import decode_header
 from contextlib import contextmanager, asynccontextmanager
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException
@@ -182,170 +178,6 @@ View dashboard: http://127.0.0.1:8000
         print(f"[EMAIL ERROR] Weekly summary: {e}")
 
 
-def _decode_header(value):
-    parts = decode_header(value or "")
-    result = ""
-    for part, charset in parts:
-        if isinstance(part, bytes):
-            result += part.decode(charset or "utf-8", errors="replace")
-        else:
-            result += part
-    return result.strip()
-
-
-def _extract_body(msg):
-    text = ""
-    if msg.is_multipart():
-        for part in msg.walk():
-            ct = part.get_content_type()
-            if ct == "text/plain":
-                charset = part.get_content_charset() or "utf-8"
-                text = part.get_payload(decode=True).decode(charset, errors="replace")
-                break
-            elif ct == "text/html" and not text:
-                charset = part.get_content_charset() or "utf-8"
-                html = part.get_payload(decode=True).decode(charset, errors="replace")
-                text = re.sub(r"<[^>]+>", " ", html)
-    else:
-        charset = msg.get_content_charset() or "utf-8"
-        text = msg.get_payload(decode=True).decode(charset, errors="replace")
-    return text.strip()
-
-
-def send_auto_reply_email(to_email: str, to_name: str, subject: str, reply_text: str, ticket_id: int):
-    sender = os.getenv("ALERT_EMAIL")
-    password = os.getenv("ALERT_EMAIL_PASSWORD")
-    if not sender or not password:
-        return
-
-    reply_subject = subject if subject.lower().startswith("re:") else f"Re: {subject}"
-    body = f"""{reply_text}
-
----
-Ticket #{ticket_id} | HIVE Marketplace Support
-support@hivemarketplace.com
-"""
-    msg = MIMEText(body)
-    msg["Subject"] = reply_subject
-    msg["From"] = f"HIVE Support <{sender}>"
-    msg["To"] = to_email
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender, password)
-            server.sendmail(sender, to_email, msg.as_string())
-        print(f"[EMAIL] Auto-reply sent to {to_email} (ticket #{ticket_id})")
-    except Exception as e:
-        print(f"[EMAIL ERROR] Auto-reply: {e}")
-
-
-def process_email_inbox():
-    imap_user = os.getenv("ALERT_EMAIL")
-    imap_pass = os.getenv("ALERT_EMAIL_PASSWORD")
-    if not imap_user or not imap_pass:
-        return
-
-    try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
-        mail.login(imap_user, imap_pass)
-        mail.select("inbox")
-
-        status, messages = mail.search(None, "UNSEEN")
-        if status != "OK" or not messages[0].strip():
-            mail.logout()
-            return
-
-        email_ids = messages[0].split()
-        print(f"[EMAIL POLL] {len(email_ids)} new email(s)")
-
-        for eid in email_ids:
-            mail.store(eid, "+FLAGS", "\\Seen")
-            status, data = mail.fetch(eid, "(RFC822)")
-            if status != "OK":
-                continue
-
-            msg = email_lib.message_from_bytes(data[0][1])
-            from_raw = _decode_header(msg.get("From", ""))
-            subject = _decode_header(msg.get("Subject", "No Subject"))
-            body = _extract_body(msg)
-
-            if not body or len(body.strip()) < 10:
-                continue
-
-            match = re.match(r'"?([^"<]+?)"?\s*<([^>]+)>', from_raw)
-            if match:
-                customer_name = match.group(1).strip()
-                customer_email = match.group(2).strip()
-            else:
-                customer_email = from_raw.strip()
-                customer_name = customer_email.split("@")[0].replace(".", " ").title()
-
-            # skip self-sent emails (alerts, summaries)
-            if customer_email.lower() == imap_user.lower():
-                continue
-
-            print(f"[EMAIL POLL] Processing from {customer_name} <{customer_email}>")
-
-            ticket_body = f"Subject: {subject}\n\n{body}"[:2000]
-            prompt = build_classify_prompt(
-                ticket_body=ticket_body,
-                customer_name=customer_name,
-                product_name="HIVE Marketplace",
-                faq_context=SAMPLE_FAQ
-            )
-
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-                max_tokens=700
-            )
-            result = json.loads(response.choices[0].message.content)
-
-            confidence = int(result.get("confidence", 0))
-            sentiment_score = int(result.get("sentiment_score", 5))
-            should_auto_reply = confidence >= 70
-            urgency = result.get("urgency", "normal")
-
-            with get_db() as conn:
-                cursor = conn.execute("""
-                    INSERT INTO tickets
-                        (customer_name, customer_email, product_name, ticket_body,
-                         category, confidence, urgency, should_auto_reply, auto_reply,
-                         agent_summary, language, sentiment_score, suggested_reply)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    customer_name, customer_email, "HIVE Marketplace", ticket_body,
-                    result.get("category", "general_inquiry"), confidence, urgency,
-                    should_auto_reply, result.get("auto_reply"), result.get("agent_summary"),
-                    result.get("language", "en"), sentiment_score, result.get("suggested_reply"),
-                ))
-                conn.commit()
-                ticket_id = cursor.lastrowid
-
-            if should_auto_reply and result.get("auto_reply"):
-                send_auto_reply_email(customer_email, customer_name, subject, result["auto_reply"], ticket_id)
-
-            if urgency == "high" or sentiment_score <= 3:
-                send_alert_email(ticket_id, customer_name, result.get("category", "general_inquiry"), ticket_body, result.get("agent_summary"), sentiment_score)
-
-            send_slack_notification(ticket_id, customer_name, result.get("category", "general_inquiry"), urgency, sentiment_score, ticket_body, should_auto_reply)
-
-        mail.logout()
-    except Exception as e:
-        print(f"[EMAIL POLL ERROR] {e}")
-
-
-async def email_polling_scheduler():
-    await asyncio.sleep(10)  # short delay on startup
-    while True:
-        try:
-            process_email_inbox()
-        except Exception as e:
-            print(f"[EMAIL POLL SCHEDULER ERROR] {e}")
-        await asyncio.sleep(120)  # poll every 2 minutes
-
-
 async def weekly_scheduler():
     while True:
         now = datetime.now()
@@ -359,7 +191,6 @@ async def weekly_scheduler():
 async def lifespan(app: FastAPI):
     init_db()
     asyncio.create_task(weekly_scheduler())
-    asyncio.create_task(email_polling_scheduler())
     yield
 
 
