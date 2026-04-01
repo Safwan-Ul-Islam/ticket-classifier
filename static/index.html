@@ -82,9 +82,10 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
     .page-title { font-size: 1.4rem; font-weight: 700; }
     .page-sub { font-size: 0.82rem; color: var(--muted2); margin-top: 2px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
     /* Stat cards */
     .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
@@ -185,8 +186,17 @@
     .reply-box {
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 8px; padding: 13px; font-size: 0.88rem;
-      line-height: 1.7; color: var(--text);
+      line-height: 1.7; color: var(--text); position: relative;
     }
+
+    /* Search bar */
+    .search-bar {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+    }
+    .search-bar input {
+      flex: 1; min-width: 200px; padding: 8px 14px; font-size: 0.85rem;
+    }
+    .search-bar select { padding: 8px 12px; font-size: 0.85rem; }
 
     /* Table */
     .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
@@ -207,7 +217,8 @@
     td { padding: 12px; border-bottom: 1px solid rgba(31,41,55,0.8); vertical-align: middle; }
     tr:hover td { background: rgba(255,255,255,0.02); }
     tr:last-child td { border-bottom: none; }
-    .ticket-body-cell { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); }
+    .ticket-body-cell { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); cursor: pointer; }
+    .ticket-body-cell:hover { color: var(--text); text-decoration: underline; }
 
     .resolve-btn {
       background: rgba(16,185,129,0.12); color: #6ee7b7;
@@ -223,11 +234,88 @@
       background: rgba(99,102,241,0.12); color: #a5b4fc;
       border: 1px solid rgba(99,102,241,0.25); padding: 7px 16px;
       border-radius: 8px; font-size: 0.82rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
     .action-btn:hover { background: rgba(99,102,241,0.22); }
 
-    .draft-text { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); font-size: 0.82rem; }
+    .btn-green {
+      background: rgba(16,185,129,0.12); color: #6ee7b7;
+      border: 1px solid rgba(16,185,129,0.25); padding: 7px 16px;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-green:hover { background: rgba(16,185,129,0.22); }
+
+    .btn-toggle {
+      background: var(--surface2); color: var(--muted2);
+      border: 1px solid var(--border); padding: 7px 14px;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-toggle.on { background: rgba(99,102,241,0.15); color: var(--primary); border-color: var(--primary); }
+
+    .draft-text { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted2); font-size: 0.82rem; }
+
+    .copy-btn {
+      background: rgba(99,102,241,0.1); color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.2); padding: 4px 10px;
+      border-radius: 5px; font-size: 0.74rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(99,102,241,0.2); }
+    .copy-btn.copied { color: #6ee7b7; border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.1); }
+
+    .view-btn {
+      background: rgba(99,102,241,0.1); color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.2); padding: 5px 10px;
+      border-radius: 5px; font-size: 0.74rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .view-btn:hover { background: rgba(99,102,241,0.2); }
+
+    .last-updated { font-size: 0.73rem; color: var(--muted); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999; padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; max-width: 640px; width: 100%;
+      max-height: 85vh; overflow-y: auto; position: relative;
+    }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; }
+    .modal-close {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted2); width: 32px; height: 32px; border-radius: 8px;
+      cursor: pointer; font-size: 1.1rem; display: flex; align-items: center;
+      justify-content: center; transition: all 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface3); }
+
+    .modal-row { margin-bottom: 16px; }
+    .modal-label { font-size: 0.72rem; color: var(--muted2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .modal-value {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; font-size: 0.87rem; line-height: 1.7;
+      color: var(--text); white-space: pre-wrap; word-break: break-word;
+    }
+    .modal-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .modal-meta { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+    .modal-meta .modal-label { margin-bottom: 4px; }
+    .modal-meta .modal-value { background: none; border: none; padding: 0; font-size: 0.88rem; }
+
+    .modal-copy-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -236,6 +324,7 @@
       .sidebar { width: 60px; }
       .sidebar-logo span, .nav-item span:not(.nav-icon), .nav-section, .sidebar-footer { display: none; }
       .main { margin-left: 60px; }
+      .modal-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -278,7 +367,11 @@
           <div class="page-title">Analytics Overview</div>
           <div class="page-sub">All-time performance metrics</div>
         </div>
-        <button class="action-btn" onclick="loadAnalytics()">↻ Refresh</button>
+        <div class="header-actions">
+          <span class="last-updated" id="analyticsUpdated"></span>
+          <button class="btn-toggle" id="autoRefreshBtn" onclick="toggleAutoRefresh()">⟳ Auto-refresh: OFF</button>
+          <button class="action-btn" onclick="loadAnalytics()">↻ Refresh</button>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -355,7 +448,7 @@
         <div class="form-row">
           <input id="customer_name" placeholder="Customer Name" value="Sarah" />
           <input id="customer_email" placeholder="Customer Email (optional)" />
-          <input id="product_name" placeholder="Product Name" value="Acme Store" />
+          <input id="product_name" placeholder="Product Name" value="HIVE Marketplace" />
         </div>
         <textarea id="ticket_body" placeholder="Paste the customer's message here...">Hi, I forgot my password and the reset email is not arriving. Can you help?</textarea>
         <button class="submit-btn" id="submitBtn" onclick="submitTicket()">✨ Classify Ticket</button>
@@ -376,7 +469,10 @@
           <div class="reply-box" id="r-sentiment-val"></div>
 
           <div id="r-draft-wrap" style="display:none">
-            <div class="r-label">Suggested Reply Draft (for human agent)</div>
+            <div class="r-label" style="display:flex;align-items:center;justify-content:space-between">
+              <span>Suggested Reply Draft (for human agent)</span>
+              <button class="copy-btn" onclick="copyDraft('r-draft', this)">📋 Copy</button>
+            </div>
             <div class="reply-box" id="r-draft"></div>
           </div>
         </div>
@@ -390,21 +486,48 @@
           <div class="page-title">All Tickets</div>
           <div class="page-sub">Complete ticket history</div>
         </div>
-        <button class="action-btn" onclick="loadTickets('allTicketsBody', '/tickets')">↻ Refresh</button>
+        <div class="header-actions">
+          <button class="btn-green" onclick="exportCSV('allTickets', 'all_tickets')">⬇ Export CSV</button>
+          <button class="action-btn" onclick="loadTickets()">↻ Refresh</button>
+        </div>
       </div>
       <div class="card">
+        <div class="search-bar">
+          <input id="ticketSearch" placeholder="🔍  Search by name, message, email..." oninput="filterTickets()" />
+          <select id="ticketFilterCat" onchange="filterTickets()">
+            <option value="">All Categories</option>
+            <option value="billing">Billing</option>
+            <option value="refund">Refund</option>
+            <option value="technical">Technical</option>
+            <option value="shipping">Shipping</option>
+            <option value="general_inquiry">General Inquiry</option>
+            <option value="complaint">Complaint</option>
+          </select>
+          <select id="ticketFilterStatus" onchange="filterTickets()">
+            <option value="">All Statuses</option>
+            <option value="auto">Auto Replied</option>
+            <option value="human">Needs Human</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select id="ticketFilterUrgency" onchange="filterTickets()">
+            <option value="">All Urgency</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>
-              <th>#</th><th>Customer</th><th>Message</th><th>Category</th>
+              <th>#</th><th>Customer</th><th>Email</th><th>Message</th><th>Category</th>
               <th>Lang</th><th>Sentiment</th><th>Confidence</th>
-              <th>Urgency</th><th>Status</th><th>Action</th>
+              <th>Urgency</th><th>Status</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="allTicketsBody">
-            <tr><td colspan="10" class="empty">Loading...</td></tr>
+            <tr><td colspan="11" class="empty">Loading...</td></tr>
           </tbody>
         </table>
+        <div id="ticketsCount" style="padding:10px 0 0;font-size:0.78rem;color:var(--muted)"></div>
       </div>
     </div>
 
@@ -415,30 +538,73 @@
           <div class="page-title">Human Inbox</div>
           <div class="page-sub">Tickets that need a human agent to respond</div>
         </div>
-        <button class="action-btn" onclick="loadInbox()">↻ Refresh</button>
+        <div class="header-actions">
+          <button class="btn-green" onclick="exportCSV('inboxTickets', 'inbox_tickets')">⬇ Export CSV</button>
+          <button class="action-btn" onclick="loadInbox()">↻ Refresh</button>
+        </div>
       </div>
       <div class="card">
+        <div class="search-bar">
+          <input id="inboxSearch" placeholder="🔍  Search by name, message..." oninput="filterInbox()" />
+          <select id="inboxFilterUrgency" onchange="filterInbox()">
+            <option value="">All Urgency</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+          </select>
+          <select id="inboxFilterCat" onchange="filterInbox()">
+            <option value="">All Categories</option>
+            <option value="billing">Billing</option>
+            <option value="refund">Refund</option>
+            <option value="technical">Technical</option>
+            <option value="shipping">Shipping</option>
+            <option value="general_inquiry">General Inquiry</option>
+            <option value="complaint">Complaint</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>
               <th>#</th><th>Customer</th><th>Message</th><th>Category</th>
               <th>Urgency</th><th>Sentiment</th><th>Agent Summary</th>
-              <th>Suggested Draft</th><th>Action</th>
+              <th>Suggested Draft</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="inboxBody">
             <tr><td colspan="9" class="empty">Loading...</td></tr>
           </tbody>
         </table>
+        <div id="inboxCount2" style="padding:10px 0 0;font-size:0.78rem;color:var(--muted)"></div>
       </div>
     </div>
 
   </main>
 </div>
 
+<!-- Ticket Detail Modal -->
+<div class="modal-overlay hidden" id="ticketModal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Ticket Details</div>
+      <button class="modal-close" onclick="document.getElementById('ticketModal').classList.add('hidden')">✕</button>
+    </div>
+    <div class="modal-badges" id="modalBadges"></div>
+    <div class="modal-grid" id="modalMeta"></div>
+    <div class="modal-row">
+      <div class="modal-label">Customer Message</div>
+      <div class="modal-value" id="modalBody"></div>
+    </div>
+    <div id="modalReplySection"></div>
+    <div id="modalDraftSection"></div>
+    <div id="modalSummarySection"></div>
+  </div>
+</div>
+
 <script>
   const API = "";
   let categoryChart, sentimentChart, urgencyChart, dailyChart;
+  let autoRefreshInterval = null;
+  let allTickets = [];
+  let inboxTickets = [];
 
   const CHART_DEFAULTS = {
     plugins: { legend: { labels: { color: "#6b7280", font: { size: 11 } } } },
@@ -454,8 +620,22 @@
     document.getElementById("page-" + name).classList.add("active");
     el.classList.add("active");
     if (name === "analytics") loadAnalytics();
-    if (name === "tickets") loadTickets("allTicketsBody", "/tickets");
+    if (name === "tickets") loadTickets();
     if (name === "inbox") loadInbox();
+  }
+
+  function toggleAutoRefresh() {
+    const btn = document.getElementById("autoRefreshBtn");
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+      btn.textContent = "⟳ Auto-refresh: OFF";
+      btn.classList.remove("on");
+    } else {
+      autoRefreshInterval = setInterval(loadAnalytics, 30000);
+      btn.textContent = "⟳ Auto-refresh: ON (30s)";
+      btn.classList.add("on");
+    }
   }
 
   async function loadAnalytics() {
@@ -469,6 +649,10 @@
     document.getElementById("stat-sentiment").textContent = d.avg_sentiment ? d.avg_sentiment.toFixed(1) : "—";
     document.getElementById("stat-resolution").textContent = d.avg_resolution_hours ? d.avg_resolution_hours + "h" : "—";
     document.getElementById("inboxCount").textContent = d.needs_human;
+
+    const now = new Date();
+    document.getElementById("analyticsUpdated").textContent =
+      `Updated ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
 
     // Category doughnut
     if (categoryChart) categoryChart.destroy();
@@ -534,21 +718,57 @@
     return `😊 ${score}/10`;
   }
 
-  async function loadTickets(tbodyId, endpoint) {
-    const res = await fetch(`${API}${endpoint}`);
-    const tickets = await res.json();
-    const tbody = document.getElementById(tbodyId);
+  function esc(str) {
+    return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
 
+  // ── All Tickets ──
+  async function loadTickets() {
+    const res = await fetch(`${API}/tickets`);
+    allTickets = await res.json();
+    filterTickets();
+  }
+
+  function filterTickets() {
+    const search = (document.getElementById("ticketSearch").value || "").toLowerCase();
+    const cat = document.getElementById("ticketFilterCat").value;
+    const status = document.getElementById("ticketFilterStatus").value;
+    const urgency = document.getElementById("ticketFilterUrgency").value;
+
+    const filtered = allTickets.filter(t => {
+      const matchSearch = !search ||
+        (t.customer_name || "").toLowerCase().includes(search) ||
+        (t.ticket_body || "").toLowerCase().includes(search) ||
+        (t.customer_email || "").toLowerCase().includes(search) ||
+        String(t.id).includes(search);
+      const matchCat = !cat || t.category === cat;
+      const matchStatus = !status ||
+        (status === "resolved" && t.resolved) ||
+        (status === "auto" && !t.resolved && t.should_auto_reply) ||
+        (status === "human" && !t.resolved && !t.should_auto_reply);
+      const matchUrgency = !urgency || t.urgency === urgency;
+      return matchSearch && matchCat && matchStatus && matchUrgency;
+    });
+
+    renderTicketsTable(filtered);
+    document.getElementById("ticketsCount").textContent =
+      filtered.length === allTickets.length
+        ? `${allTickets.length} tickets total`
+        : `Showing ${filtered.length} of ${allTickets.length} tickets`;
+  }
+
+  function renderTicketsTable(tickets) {
+    const tbody = document.getElementById("allTicketsBody");
     if (tickets.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="empty">No tickets yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="empty">No tickets match your filters.</td></tr>`;
       return;
     }
-
     tbody.innerHTML = tickets.map(t => `
       <tr>
         <td style="color:var(--muted);font-size:0.8rem">#${t.id}</td>
-        <td style="font-weight:500">${t.customer_name}</td>
-        <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
+        <td style="font-weight:500">${esc(t.customer_name)}</td>
+        <td style="color:var(--muted2);font-size:0.8rem;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(t.customer_email)}">${esc(t.customer_email) || "—"}</td>
+        <td class="ticket-body-cell" title="${esc(t.ticket_body)}" onclick="openModal(${t.id})">${esc(t.ticket_body)}</td>
         <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
         <td><span class="badge badge-lang">${t.language || "en"}</span></td>
         <td style="font-weight:700;color:${sentimentColor(t.sentiment_score)}">${sentimentEmoji(t.sentiment_score)}</td>
@@ -557,46 +777,232 @@
         <td><span class="badge ${t.resolved ? 'badge-normal' : t.should_auto_reply ? 'badge-auto' : 'badge-human'}">
           ${t.resolved ? "✓ Resolved" : t.should_auto_reply ? "Auto Replied" : "Needs Human"}
         </span></td>
-        <td>${!t.resolved && !t.should_auto_reply
-          ? `<button class="resolve-btn" onclick="resolve(${t.id}, 'allTicketsBody', '/tickets')">✓ Resolve</button>`
-          : "—"
-        }</td>
+        <td style="display:flex;gap:5px;align-items:center">
+          <button class="view-btn" onclick="openModal(${t.id})">👁 View</button>
+          ${!t.resolved && !t.should_auto_reply
+            ? `<button class="resolve-btn" onclick="resolve(${t.id}, 'tickets')">✓</button>`
+            : ""}
+        </td>
       </tr>
     `).join("");
   }
 
+  // ── Inbox ──
   async function loadInbox() {
     const res = await fetch(`${API}/tickets/inbox`);
-    const tickets = await res.json();
-    const tbody = document.getElementById("inboxBody");
+    inboxTickets = await res.json();
+    // Update badge from actual inbox count
+    document.getElementById("inboxCount").textContent = inboxTickets.length;
+    filterInbox();
+  }
 
+  function filterInbox() {
+    const search = (document.getElementById("inboxSearch").value || "").toLowerCase();
+    const urgency = document.getElementById("inboxFilterUrgency").value;
+    const cat = document.getElementById("inboxFilterCat").value;
+
+    const filtered = inboxTickets.filter(t => {
+      const matchSearch = !search ||
+        (t.customer_name || "").toLowerCase().includes(search) ||
+        (t.ticket_body || "").toLowerCase().includes(search);
+      const matchUrgency = !urgency || t.urgency === urgency;
+      const matchCat = !cat || t.category === cat;
+      return matchSearch && matchUrgency && matchCat;
+    });
+
+    renderInboxTable(filtered);
+    document.getElementById("inboxCount2").textContent =
+      filtered.length === inboxTickets.length
+        ? `${inboxTickets.length} tickets need attention`
+        : `Showing ${filtered.length} of ${inboxTickets.length} tickets`;
+  }
+
+  function renderInboxTable(tickets) {
+    const tbody = document.getElementById("inboxBody");
     if (tickets.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" class="empty">All clear! No tickets need human attention.</td></tr>`;
       return;
     }
-
     tbody.innerHTML = tickets.map(t => `
       <tr>
         <td style="color:var(--muted);font-size:0.8rem">#${t.id}</td>
-        <td style="font-weight:500">${t.customer_name}</td>
-        <td class="ticket-body-cell" title="${t.ticket_body}">${t.ticket_body}</td>
+        <td style="font-weight:500">${esc(t.customer_name)}</td>
+        <td class="ticket-body-cell" title="${esc(t.ticket_body)}" onclick="openModal(${t.id}, 'inbox')">${esc(t.ticket_body)}</td>
         <td><span class="badge badge-category">${t.category.replace("_", " ")}</span></td>
         <td><span class="badge ${t.urgency === 'high' ? 'badge-high' : 'badge-normal'}">${t.urgency}</span></td>
         <td style="font-weight:700;color:${sentimentColor(t.sentiment_score)}">${sentimentEmoji(t.sentiment_score)}</td>
-        <td style="max-width:160px;color:var(--muted2);font-size:0.82rem">${t.agent_summary || "—"}</td>
-        <td class="draft-text" title="${t.suggested_reply || ''}">${t.suggested_reply || "—"}</td>
-        <td><button class="resolve-btn" onclick="resolve(${t.id})">✓ Resolve</button></td>
+        <td style="max-width:140px;color:var(--muted2);font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(t.agent_summary)}">${esc(t.agent_summary) || "—"}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:5px">
+            <span class="draft-text" title="${esc(t.suggested_reply)}">${esc(t.suggested_reply) || "—"}</span>
+            ${t.suggested_reply ? `<button class="copy-btn" onclick="copyText(${JSON.stringify(t.suggested_reply)}, this)">📋</button>` : ""}
+          </div>
+        </td>
+        <td style="display:flex;gap:5px;align-items:center">
+          <button class="view-btn" onclick="openModal(${t.id}, 'inbox')">👁 View</button>
+          <button class="resolve-btn" onclick="resolve(${t.id}, 'inbox')">✓</button>
+        </td>
       </tr>
     `).join("");
   }
 
-  async function resolve(id, tbodyId = "inboxBody", endpoint = "/tickets/inbox") {
+  async function resolve(id, source = "inbox") {
     await fetch(`${API}/tickets/${id}/resolve`, { method: "PATCH" });
-    if (tbodyId === "inboxBody") loadInbox();
-    else loadTickets(tbodyId, endpoint);
+    if (source === "inbox") loadInbox();
+    else loadTickets();
     loadAnalytics();
+    document.getElementById("ticketModal").classList.add("hidden");
   }
 
+  // ── Modal ──
+  function openModal(id, source) {
+    const list = source === "inbox" ? inboxTickets : allTickets;
+    const t = list.find(x => x.id === id) || allTickets.find(x => x.id === id) || inboxTickets.find(x => x.id === id);
+    if (!t) return;
+
+    document.getElementById("modalTitle").textContent = `Ticket #${t.id} — ${t.customer_name}`;
+
+    // Badges
+    document.getElementById("modalBadges").innerHTML = `
+      <span class="badge badge-category">${t.category.replace("_"," ")}</span>
+      <span class="badge ${t.urgency==="high"?"badge-high":"badge-normal"}">${t.urgency} urgency</span>
+      <span class="badge ${t.resolved?"badge-normal":t.should_auto_reply?"badge-auto":"badge-human"}">
+        ${t.resolved?"✓ Resolved":t.should_auto_reply?"Auto Replied":"Needs Human"}
+      </span>
+      <span class="badge badge-lang">${t.language||"en"}</span>
+    `;
+
+    // Meta grid
+    document.getElementById("modalMeta").innerHTML = `
+      <div class="modal-meta">
+        <div class="modal-label">Customer</div>
+        <div class="modal-value">${esc(t.customer_name)}</div>
+      </div>
+      <div class="modal-meta">
+        <div class="modal-label">Email</div>
+        <div class="modal-value">${esc(t.customer_email) || "—"}</div>
+      </div>
+      <div class="modal-meta">
+        <div class="modal-label">Sentiment</div>
+        <div class="modal-value" style="color:${sentimentColor(t.sentiment_score)}">${sentimentEmoji(t.sentiment_score)}</div>
+      </div>
+      <div class="modal-meta">
+        <div class="modal-label">Confidence</div>
+        <div class="modal-value" style="color:var(--primary);font-weight:700">${t.confidence}%</div>
+      </div>
+      <div class="modal-meta">
+        <div class="modal-label">Product</div>
+        <div class="modal-value">${esc(t.product_name) || "—"}</div>
+      </div>
+      <div class="modal-meta">
+        <div class="modal-label">Submitted</div>
+        <div class="modal-value">${new Date(t.created_at).toLocaleString()}</div>
+      </div>
+    `;
+
+    document.getElementById("modalBody").textContent = t.ticket_body || "—";
+
+    // Auto reply or agent summary
+    const replySection = document.getElementById("modalReplySection");
+    if (t.auto_reply) {
+      replySection.innerHTML = `
+        <div class="modal-row">
+          <div class="modal-label">🤖 AI Auto Reply</div>
+          <div class="modal-value">${esc(t.auto_reply)}</div>
+        </div>`;
+    } else if (t.agent_summary) {
+      replySection.innerHTML = `
+        <div class="modal-row">
+          <div class="modal-label">📋 Agent Summary</div>
+          <div class="modal-value">${esc(t.agent_summary)}</div>
+        </div>`;
+    } else {
+      replySection.innerHTML = "";
+    }
+
+    // Suggested draft
+    const draftSection = document.getElementById("modalDraftSection");
+    if (t.suggested_reply) {
+      draftSection.innerHTML = `
+        <div class="modal-row">
+          <div class="modal-copy-row">
+            <div class="modal-label">✏️ Suggested Reply Draft</div>
+            <button class="copy-btn" onclick="copyText(${JSON.stringify(t.suggested_reply)}, this)">📋 Copy Draft</button>
+          </div>
+          <div class="modal-value">${esc(t.suggested_reply)}</div>
+        </div>`;
+    } else {
+      draftSection.innerHTML = "";
+    }
+
+    // Resolve button in modal (if applicable)
+    const summarySection = document.getElementById("modalSummarySection");
+    if (!t.resolved) {
+      const src = source || (inboxTickets.find(x=>x.id===id) ? "inbox" : "tickets");
+      summarySection.innerHTML = `
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <button class="resolve-btn" style="padding:8px 20px;font-size:0.85rem" onclick="resolve(${t.id},'${src}')">✓ Mark as Resolved</button>
+        </div>`;
+    } else {
+      summarySection.innerHTML = `<div style="margin-top:16px;font-size:0.82rem;color:var(--success)">✓ Resolved at ${t.resolved_at ? new Date(t.resolved_at).toLocaleString() : "—"}</div>`;
+    }
+
+    document.getElementById("ticketModal").classList.remove("hidden");
+  }
+
+  function closeModal(event) {
+    if (event.target.id === "ticketModal") {
+      document.getElementById("ticketModal").classList.add("hidden");
+    }
+  }
+
+  // ── Copy helpers ──
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "✓ Copied";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.textContent = "📋 Copy Draft";
+        btn.classList.remove("copied");
+      }, 2000);
+    });
+  }
+
+  function copyDraft(elId, btn) {
+    const text = document.getElementById(elId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "✓ Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.textContent = "📋 Copy";
+        btn.classList.remove("copied");
+      }, 2000);
+    });
+  }
+
+  // ── Export CSV ──
+  function exportCSV(dataVar, filename) {
+    const data = dataVar === "allTickets" ? allTickets : inboxTickets;
+    if (!data.length) { alert("No data to export."); return; }
+
+    const headers = ["id","created_at","customer_name","customer_email","product_name","ticket_body","category","confidence","urgency","should_auto_reply","auto_reply","agent_summary","suggested_reply","language","sentiment_score","resolved","resolved_at"];
+    const rows = data.map(t =>
+      headers.map(h => {
+        const val = t[h] ?? "";
+        return `"${String(val).replace(/"/g,'""')}"`;
+      }).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Classify ──
   async function submitTicket() {
     const btn = document.getElementById("submitBtn");
     btn.disabled = true;

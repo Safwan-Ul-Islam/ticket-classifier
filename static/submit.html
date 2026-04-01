@@ -194,7 +194,7 @@
       const res = await fetch(`${API}/classify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket_body: body, customer_name: name, customer_email: email }),
+        body: JSON.stringify({ ticket_body: body, customer_name: name, customer_email: email, product_name: "HIVE Marketplace" }),
       });
       const data = await res.json();
       if (!res.ok) { alert("Something went wrong. Please try again."); return; }
