@@ -32,14 +32,14 @@ YOUR TASKS:
 4. SCORE your confidence from 0 to 100 on how well you can resolve
    this using only the FAQ below. Be honest.
 
-5. If confidence is 85 or above:
+5. If confidence is 70 or above:
    Write a warm, helpful reply under 150 words using only the FAQ.
    Reply in the SAME LANGUAGE as the customer's message.
    Address the customer by their first name.
    End with: Let me know if there is anything else I can help with!
    Set agent_summary to null.
 
-6. If confidence is below 85:
+6. If confidence is below 70:
    Write a short 2-3 sentence agent_summary for a human agent explaining
    what the customer needs and any important details.
    Set auto_reply to null.

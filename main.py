@@ -284,7 +284,7 @@ async def classify_ticket(request: TicketRequest):
         result = json.loads(raw)
         confidence = int(result.get("confidence", 0))
         sentiment_score = int(result.get("sentiment_score", 5))
-        should_auto_reply = confidence >= 85
+        should_auto_reply = confidence >= 70
 
         with get_db() as conn:
             cursor = conn.execute("""
