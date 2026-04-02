@@ -345,6 +345,9 @@
     <div class="nav-item" onclick="showPage('classify', this)">
       <span class="nav-icon">✨</span><span>Classify Ticket</span>
     </div>
+    <div class="nav-item" onclick="showPage('insights', this)">
+      <span class="nav-icon">🧠</span><span>BI Insights</span>
+    </div>
     <div class="nav-section">Tickets</div>
     <div class="nav-item" onclick="showPage('tickets', this)">
       <span class="nav-icon">🎫</span><span>All Tickets</span>
@@ -580,6 +583,91 @@
       </div>
     </div>
 
+    <!-- ── BI Insights ── -->
+    <div class="page" id="page-insights">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Business Intelligence</div>
+          <div class="page-sub">Deep insights into your support operations</div>
+        </div>
+        <button class="action-btn" onclick="loadInsights()">↻ Refresh</button>
+      </div>
+
+      <!-- AI Efficiency this week -->
+      <div class="charts-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+        <div class="chart-card">
+          <div class="chart-title">AI Auto-Reply Rate — Last 7 Days</div>
+          <canvas id="efficiencyChart" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Peak Hours (When Tickets Arrive)</div>
+          <canvas id="peakHoursChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Top topics + language -->
+      <div class="charts-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px">
+        <div class="chart-card">
+          <div class="chart-title">Top Issues This Week</div>
+          <canvas id="topicsWeekChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Top Issues This Month</div>
+          <canvas id="topicsMonthChart" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Languages</div>
+          <canvas id="languagesChart" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Unresolved age + confidence by category -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card" style="margin:0">
+          <div class="card-title">Unresolved Tickets — Age</div>
+          <div style="display:flex;gap:12px;margin-top:8px">
+            <div class="stat-card green" style="flex:1;padding:14px">
+              <div class="stat-value" id="bi-under1d" style="font-size:1.5rem">—</div>
+              <div class="stat-label" style="font-size:0.75rem">Under 24h</div>
+            </div>
+            <div class="stat-card yellow" style="flex:1;padding:14px">
+              <div class="stat-value" id="bi-1to3d" style="font-size:1.5rem">—</div>
+              <div class="stat-label" style="font-size:0.75rem">1–3 Days</div>
+            </div>
+            <div class="stat-card red" style="flex:1;padding:14px">
+              <div class="stat-value" id="bi-over3d" style="font-size:1.5rem">—</div>
+              <div class="stat-label" style="font-size:0.75rem">Over 3 Days</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="card-title">AI Confidence by Category</div>
+          <div id="confidenceTable" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- Repeat customers -->
+      <div class="card">
+        <div class="card-title">Repeat Customers (Multiple Tickets)</div>
+        <table id="repeatTable">
+          <thead>
+            <tr>
+              <th>Customer</th><th>Email</th><th>Tickets</th><th>Avg Sentiment</th>
+            </tr>
+          </thead>
+          <tbody id="repeatBody">
+            <tr><td colspan="4" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vendor complaints -->
+      <div class="card">
+        <div class="card-title">Vendor / Delivery Complaint Signals</div>
+        <div id="vendorComplaints"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -624,6 +712,7 @@
     document.getElementById("page-" + name).classList.add("active");
     el.classList.add("active");
     if (name === "analytics") loadAnalytics();
+    if (name === "insights") loadInsights();
     if (name === "tickets") { loadTickets(); startTicketsAuto(); }
     if (name === "inbox") { loadInbox(); startTicketsAuto(); }
     if (name !== "tickets" && name !== "inbox") stopTicketsAuto();
@@ -1086,6 +1175,120 @@
     } finally {
       btn.disabled = false;
       btn.textContent = "✨ Classify Ticket";
+    }
+  }
+
+  // ── BI Insights ──
+  let efficiencyChart, peakHoursChart, topicsWeekChart, topicsMonthChart, languagesChart;
+
+  async function loadInsights() {
+    const res = await fetch(`${API}/analytics/insights`);
+    const d = await res.json();
+
+    // AI Efficiency line chart
+    if (efficiencyChart) efficiencyChart.destroy();
+    efficiencyChart = new Chart(document.getElementById("efficiencyChart"), {
+      type: "bar",
+      data: {
+        labels: d.ai_efficiency.map(x => x.day.slice(5)),
+        datasets: [
+          { label: "Auto-replied", data: d.ai_efficiency.map(x => x.auto), backgroundColor: "#10b981", borderRadius: 6 },
+          { label: "Needs Human", data: d.ai_efficiency.map(x => x.total - x.auto), backgroundColor: "#f59e0b", borderRadius: 6 }
+        ]
+      },
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, scales: { x: { stacked: true, ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } }, y: { stacked: true, ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } } } }
+    });
+
+    // Peak hours
+    if (peakHoursChart) peakHoursChart.destroy();
+    peakHoursChart = new Chart(document.getElementById("peakHoursChart"), {
+      type: "bar",
+      data: {
+        labels: d.peak_hours.map(x => `${x.hour}:00`),
+        datasets: [{ data: d.peak_hours.map(x => x.count), backgroundColor: "#6366f1", borderRadius: 4 }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#6b7280", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.04)" } }, y: { ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } } } }
+    });
+
+    // Top topics this week
+    if (topicsWeekChart) topicsWeekChart.destroy();
+    topicsWeekChart = new Chart(document.getElementById("topicsWeekChart"), {
+      type: "doughnut",
+      data: {
+        labels: d.top_topics_week.map(x => x.category.replace("_", " ")),
+        datasets: [{ data: d.top_topics_week.map(x => x.count), backgroundColor: ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4"], borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, cutout: "60%" }
+    });
+
+    // Top topics this month
+    if (topicsMonthChart) topicsMonthChart.destroy();
+    topicsMonthChart = new Chart(document.getElementById("topicsMonthChart"), {
+      type: "doughnut",
+      data: {
+        labels: d.top_topics_month.map(x => x.category.replace("_", " ")),
+        datasets: [{ data: d.top_topics_month.map(x => x.count), backgroundColor: ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4"], borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, cutout: "60%" }
+    });
+
+    // Languages
+    if (languagesChart) languagesChart.destroy();
+    languagesChart = new Chart(document.getElementById("languagesChart"), {
+      type: "doughnut",
+      data: {
+        labels: d.languages.map(x => x.language.toUpperCase()),
+        datasets: [{ data: d.languages.map(x => x.count), backgroundColor: ["#06b6d4","#8b5cf6","#f59e0b","#10b981","#ef4444","#6366f1"], borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { labels: { color: "#9ca3af", font: { size: 11 } } } }, cutout: "60%" }
+    });
+
+    // Unresolved age
+    document.getElementById("bi-under1d").textContent = d.unresolved_age.under_1d;
+    document.getElementById("bi-1to3d").textContent = d.unresolved_age.one_to_3d;
+    document.getElementById("bi-over3d").textContent = d.unresolved_age.over_3d;
+
+    // Confidence by category table
+    document.getElementById("confidenceTable").innerHTML = d.confidence_by_category.map(r => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:0.84rem;text-transform:capitalize">${r.category.replace("_"," ")}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:100px;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">
+            <div style="width:${r.avg_confidence}%;height:100%;background:${r.avg_confidence>=75?"#10b981":r.avg_confidence>=60?"#f59e0b":"#ef4444"};border-radius:3px"></div>
+          </div>
+          <span style="font-size:0.82rem;font-weight:700;color:var(--primary);width:36px;text-align:right">${r.avg_confidence}%</span>
+          <span style="font-size:0.75rem;color:var(--muted)">${r.total} tickets</span>
+        </div>
+      </div>
+    `).join("");
+
+    // Repeat customers
+    const tbody = document.getElementById("repeatBody");
+    if (!d.repeat_customers.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty">No repeat customers yet.</td></tr>`;
+    } else {
+      tbody.innerHTML = d.repeat_customers.map(r => `
+        <tr>
+          <td style="font-weight:500">${esc(r.name)}</td>
+          <td style="color:var(--muted2);font-size:0.82rem">${esc(r.email)}</td>
+          <td><span class="badge badge-category">${r.ticket_count} tickets</span></td>
+          <td style="font-weight:700;color:${sentimentColor(r.avg_sentiment)}">${sentimentEmoji(r.avg_sentiment)}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Vendor complaints
+    const vc = document.getElementById("vendorComplaints");
+    if (!d.vendor_complaints.length) {
+      vc.innerHTML = `<div style="color:var(--muted);font-size:0.88rem;padding:12px 0">No vendor/delivery complaints detected.</div>`;
+    } else {
+      vc.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">` +
+        d.vendor_complaints.map(r => `
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 16px">
+            <div style="font-size:0.75rem;color:var(--muted2);text-transform:uppercase">${r.category.replace("_"," ")}</div>
+            <div style="font-size:1.3rem;font-weight:800;color:#fca5a5">${r.count}</div>
+          </div>
+        `).join("") + `</div>`;
     }
   }
 

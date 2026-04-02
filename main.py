@@ -433,3 +433,99 @@ def get_analytics():
         "by_urgency": [{"urgency": r[0], "count": r[1]} for r in by_urgency],
         "daily": [{"day": r[0], "count": r[1]} for r in reversed(daily)],
     }
+
+
+@app.get("/analytics/insights")
+def get_insights():
+    with get_db() as conn:
+
+        # Top complaint topics this week
+        top_topics_week = conn.execute("""
+            SELECT category, COUNT(*) as count
+            FROM tickets
+            WHERE created_at >= DATE('now', '-7 days')
+            GROUP BY category ORDER BY count DESC
+        """).fetchall()
+
+        # Top complaint topics this month
+        top_topics_month = conn.execute("""
+            SELECT category, COUNT(*) as count
+            FROM tickets
+            WHERE created_at >= DATE('now', '-30 days')
+            GROUP BY category ORDER BY count DESC
+        """).fetchall()
+
+        # Vendor complaints — tickets mentioning a vendor-like complaint
+        vendor_complaints = conn.execute("""
+            SELECT category, COUNT(*) as count
+            FROM tickets
+            WHERE (ticket_body LIKE '%vendor%' OR ticket_body LIKE '%seller%'
+                OR ticket_body LIKE '%shop%' OR ticket_body LIKE '%wrong product%'
+                OR ticket_body LIKE '%not delivered%' OR ticket_body LIKE '%fake%')
+            GROUP BY category ORDER BY count DESC
+        """).fetchall()
+
+        # Avg response readiness by category (avg confidence)
+        confidence_by_category = conn.execute("""
+            SELECT category, ROUND(AVG(confidence), 0) as avg_confidence, COUNT(*) as total
+            FROM tickets GROUP BY category ORDER BY avg_confidence DESC
+        """).fetchall()
+
+        # Unresolved ticket age — how long tickets have been sitting
+        unresolved_age = conn.execute("""
+            SELECT
+                SUM(CASE WHEN JULIANDAY('now') - JULIANDAY(created_at) < 1 THEN 1 ELSE 0 END) as under_1d,
+                SUM(CASE WHEN JULIANDAY('now') - JULIANDAY(created_at) BETWEEN 1 AND 3 THEN 1 ELSE 0 END) as one_to_3d,
+                SUM(CASE WHEN JULIANDAY('now') - JULIANDAY(created_at) > 3 THEN 1 ELSE 0 END) as over_3d
+            FROM tickets WHERE resolved = FALSE AND should_auto_reply = FALSE
+        """).fetchone()
+
+        # AI efficiency rate per week
+        ai_efficiency = conn.execute("""
+            SELECT
+                DATE(created_at) as day,
+                COUNT(*) as total,
+                SUM(CASE WHEN should_auto_reply = TRUE THEN 1 ELSE 0 END) as auto,
+                ROUND(100.0 * SUM(CASE WHEN should_auto_reply = TRUE THEN 1 ELSE 0 END) / COUNT(*), 0) as rate
+            FROM tickets
+            WHERE created_at >= DATE('now', '-7 days')
+            GROUP BY day ORDER BY day ASC
+        """).fetchall()
+
+        # Languages breakdown
+        languages = conn.execute("""
+            SELECT language, COUNT(*) as count
+            FROM tickets GROUP BY language ORDER BY count DESC
+        """).fetchall()
+
+        # Repeat customers (same email, more than 1 ticket)
+        repeat_customers = conn.execute("""
+            SELECT customer_email, customer_name, COUNT(*) as ticket_count,
+                   ROUND(AVG(sentiment_score), 1) as avg_sentiment
+            FROM tickets
+            WHERE customer_email IS NOT NULL AND customer_email != ''
+            GROUP BY customer_email HAVING ticket_count > 1
+            ORDER BY ticket_count DESC LIMIT 10
+        """).fetchall()
+
+        # Peak hours
+        peak_hours = conn.execute("""
+            SELECT CAST(STRFTIME('%H', created_at) AS INTEGER) as hour, COUNT(*) as count
+            FROM tickets GROUP BY hour ORDER BY hour ASC
+        """).fetchall()
+
+    return {
+        "top_topics_week": [{"category": r[0], "count": r[1]} for r in top_topics_week],
+        "top_topics_month": [{"category": r[0], "count": r[1]} for r in top_topics_month],
+        "vendor_complaints": [{"category": r[0], "count": r[1]} for r in vendor_complaints],
+        "confidence_by_category": [{"category": r[0], "avg_confidence": r[1], "total": r[2]} for r in confidence_by_category],
+        "unresolved_age": {
+            "under_1d": unresolved_age[0] or 0,
+            "one_to_3d": unresolved_age[1] or 0,
+            "over_3d": unresolved_age[2] or 0,
+        },
+        "ai_efficiency": [{"day": r[0], "total": r[1], "auto": r[2], "rate": r[3]} for r in ai_efficiency],
+        "languages": [{"language": r[0], "count": r[1]} for r in languages],
+        "repeat_customers": [{"email": r[0], "name": r[1], "ticket_count": r[2], "avg_sentiment": r[3]} for r in repeat_customers],
+        "peak_hours": [{"hour": r[0], "count": r[1]} for r in peak_hours],
+    }
